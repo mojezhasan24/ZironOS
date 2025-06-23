@@ -43,3 +43,8 @@ halt:
     jmp halt   # loop forever
 
 .size _start, . - _start
+.global isr0
+isr0:
+    cli
+    hlt
+    jmp isr0

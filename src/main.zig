@@ -1,3 +1,6 @@
+const std = @import("std");
+const idt = @import("idt.zig");
+
 // VGA text mode constants
 const VGA_WIDTH = 80;
 const VGA_HEIGHT = 25;
@@ -48,6 +51,15 @@ fn terminal_initialize() void {
     terminal_row = 0;
     terminal_column = 0;
 }
+extern fn isr0() callconv(.Naked) void;
+
+pub fn initIDT() void {
+    const CODE_SELECTOR: u16 = 0x08; // From GDT (we’ll fix GDT later)
+    const isr_addr = @intFromPtr(@as([*]const u8, @ptrCast(&isr0)));
+    idt.idt[0] = idt.IDTEntry.init(isr_addr, CODE_SELECTOR, 0x8E);
+    // Present, Ring 0, Interrupt Gate
+    idt.loadIDT();
+}
 
 fn terminal_putentryat(c: u8, color: u8, x: u8, y: u8) void {
     const index = @as(usize, y) * VGA_WIDTH + x;
@@ -90,6 +102,7 @@ fn inb(port: u16) u8 {
 export fn main() noreturn {
     // Initialize VGA text mode
     terminal_initialize();
+    initIDT(); // after terminal init
 
     // Print startup messages
     terminal_color = vga_entry_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
