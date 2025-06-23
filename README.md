@@ -1,149 +1,126 @@
-# ZironOS - A Simple Kernel in Zig
+🔷 ZironOS — A Tiny 64-bit Kernel in Zig
 
-## Project Structure
-```
-zironos/
+ZironOS is a minimalistic multiboot-compliant kernel written in Zig and x86_64 assembly. It boots using GRUB, prints to the screen using VGA text mode, and captures real-time keyboard input using raw scancodes.
+🌲 Project Structure
+
+ZironOS/
 ├── src/
-│   ├── main.zig           # Kernel main code
-│   └── boot.s             # Assembly bootloader
+│   ├── main.zig           # Kernel logic (VGA + Keyboard input)
+│   └── boot.s             # Entry point (_start) & stack setup
 ├── iso_root/
 │   └── boot/
 │       └── grub/
-│           └── grub.cfg   # GRUB configuration
-├── build.zig              # Zig build configuration
-├── linker.ld              # Linker script
-├── Makefile              # Build automation
-└── README.md             # This file
-```
+│           └── grub.cfg   # GRUB bootloader config
+├── build.zig              # Zig build system
+├── linker.ld              # Linker script with multiboot header
+├── Makefile               # Build + run automation
+└── README.md              # This file
 
-## Prerequisites
+🧰 Requirements
 
-1. **Zig 0.11.0** - Download from [ziglang.org](https://ziglang.org/download/)
-2. **GRUB tools** - For creating bootable ISO
-   ```bash
-   # Ubuntu/Debian
-   sudo apt install grub-pc-bin grub-common xorriso
+    Zig 0.11.0
 
-   # Arch Linux
-   sudo pacman -S grub xorriso
+    GRUB Tools: grub-mkrescue, xorriso, etc.
 
-   # macOS (with Homebrew)
-   brew install grub xorriso
-   ```
-3. **QEMU** (optional, for testing)
-   ```bash
-   # Ubuntu/Debian
-   sudo apt install qemu-system-x86
+    QEMU (for testing without physical hardware)
 
-   # Arch Linux  
-   sudo pacman -S qemu
+📦 Install on Ubuntu/Debian
 
-   # macOS
-   brew install qemu
-   ```
+sudo apt update
+sudo apt install grub-pc-bin xorriso qemu-system-x86
 
-## Building
+📦 Install on Arch
 
-### Quick Start
-```bash
-# Check if you have all required tools
-make check
+sudo pacman -S grub xorriso qemu
 
-# Build and create ISO
-make iso
+🚀 Build and Run
+🔁 One-Command Boot Test
 
-# Test in QEMU (if installed)
-make run
-```
-
-### Manual Build Steps
-```bash
-# 1. Create directory structure
-mkdir -p src iso_root/boot/grub
-
-# 2. Build kernel
-zig build
-
-# 3. Create ISO
-cp zig-out/bin/zironos iso_root/zironos
-grub-mkrescue -o zironos.iso iso_root
-```
-
-## Testing
-
-### In QEMU
-```bash
-# Basic run
 make run
 
-# With debugging output
-make debug
+🧱 Full Lifecycle
 
-# Manual QEMU command
-qemu-system-x86_64 -cdrom zironos.iso
-```
+make check    # Ensure dependencies exist
+make clean    # Remove old build/cache
+make iso      # Build & generate ISO image
+make run      # Launch QEMU and boot ZironOS
 
-### On Real Hardware
-⚠️ **WARNING**: Only test on hardware you don't mind potentially corrupting!
+🖥️ What ZironOS Does
 
-1. Flash the ISO to a USB drive:
-   ```bash
-   sudo dd if=zironos.iso of=/dev/sdX bs=4M status=progress
-   ```
-2. Boot from the USB drive
+✅ Boots via GRUB (Multiboot 1)
+✅ Sets up a clean stack and calls main
+✅ Initializes a VGA buffer (80x25, 16 colors)
+✅ Prints text in color using low-level memory writes
+✅ Captures keyboard input and prints each character in real time
+✨ Output on Boot
 
-## Features
-
-- ✅ Multiboot-compliant kernel
-- ✅ VGA text mode output  
-- ✅ Colorful terminal display
-- ✅ Proper stack setup
-- ✅ Memory-safe Zig code
-- ✅ Cross-platform build system
-
-## What You'll See
-
-When you boot ZironOS, you should see:
-```
 ZironOS v0.1.0
 Kernel loaded successfully!
 Welcome to ZironOS - A kernel written in Zig
 System initialized and ready.
-```
 
-Each line will be displayed in different colors!
+ZironShell >
 
-## Next Steps
+Then you can start typing — and it responds instantly!
+🧪 Testing on QEMU
 
-Some ideas for extending ZironOS:
-- Add keyboard input handling
-- Implement a simple shell
-- Add memory management
-- Create a filesystem
-- Add multitasking support
+# Basic test
+make run
 
-## Troubleshooting
+# With debugging
+make debug
 
-### Common Issues
+💻 Testing on Real Hardware (⚠️ Expert-Only)
 
-1. **"No multiboot header found"**
-   - Make sure the assembly file is properly linked
-   - Check that the multiboot section comes first in the linker script
+sudo dd if=zironos.iso of=/dev/sdX bs=4M status=progress
 
-2. **"Zig build fails"**
-   - Ensure you're using Zig 0.11.0
-   - Check that all file paths in build.zig are correct
+Then reboot and boot from the USB.
+🧠 What's Inside
 
-3. **"grub-mkrescue not found"**
-   - Install GRUB tools as shown in prerequisites
-   - On some systems, try `grub2-mkrescue` instead
+    boot.s sets up the multiboot header, entry point, and stack
 
-4. **QEMU doesn't start**
-   - Make sure QEMU is installed
-   - Try `qemu-system-i386` instead of `qemu-system-x86_64`
+    main.zig initializes the terminal and enters a keyboard input loop
 
-### Clean and Rebuild
-```bash
-make clean
-make iso
-```
+    linker.ld ensures .multiboot is placed early and sections are aligned properly
+
+    grub.cfg makes GRUB load the kernel via multiboot /zironos
+
+🧱 Future Plans
+
+    ⌨️ Basic shell with built-in commands
+
+    📦 Memory paging
+
+    📁 FAT32/EXT2 read-only FS support
+
+    🧵 Task switching & cooperative multitasking
+
+    🔌 Basic driver support (timer, serial)
+
+❓ Troubleshooting
+🔻 GRUB: No Multiboot Header Found?
+
+    Ensure .multiboot is the first section in linker.ld
+
+    Check objdump -h zig-out/bin/zironos — .multiboot must be near 0x100000
+
+🔻 "Permission denied" or PAT issues with git push?
+
+    Use a Personal Access Token instead of password
+
+    Example:
+
+    Username: your-github-username
+    Password: <paste your token here>
+
+💬 Credits
+
+Built with 💙 using:
+
+    Zig 0.11.0
+
+    x86_64 assembly
+
+    GRUB bootloader
+
+    QEMU for testing
