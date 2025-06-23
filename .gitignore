@@ -1,0 +1,10 @@
+# Ignore build artifacts and cache
+zig-out/
+zig-cache/
+zironos.iso
+iso_root/zironos
+
+# Backup/temporary files
+*~
+*.swp
+*.tmp
