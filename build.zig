@@ -21,7 +21,7 @@ pub fn build(b: *std.Build) void {
 
     // Use our custom linker script
     kernel.setLinkerScriptPath(.{ .path = "linker.ld" });
-
+    kernel.addAssemblyFile(.{ .path = "src/isr.s" });
     // Disable strip for debugging
     kernel.strip = false;
 
