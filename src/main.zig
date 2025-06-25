@@ -1,6 +1,8 @@
 const std = @import("std");
 const idt = @import("idt.zig");
 const io = @import("io.zig");
+var extended_scancode: bool = false;
+var awaiting_extended: bool = false;
 
 // VGA text mode constants
 const VGA_WIDTH = 80;
@@ -50,6 +52,14 @@ var command_length: u8 = 0;
 var command_history: [10][256]u8 = [_][256]u8{[_]u8{0} ** 256} ** 10;
 var history_count: u8 = 0;
 var history_index: u8 = 0;
+fn clear_line() void {
+    terminal_row -= 0;
+    terminal_column = 0;
+    for (0..VGA_WIDTH) |i| {
+        terminal_putentryat(' ', terminal_color, @truncate(i), terminal_row);
+    }
+    update_cursor();
+}
 
 // Screen buffer for scrolling
 var screen_buffer: [VGA_HEIGHT][VGA_WIDTH]u16 = [_][VGA_WIDTH]u16{[_]u16{0} ** VGA_WIDTH} ** VGA_HEIGHT;
@@ -63,6 +73,15 @@ fn vga_entry(uc: u8, color: u8) u16 {
 }
 
 fn update_cursor() void {
+    if (!cursor_visible) {
+        // Hide cursor by moving it off-screen
+        outb(0x3D4, 0x0F);
+        outb(0x3D5, 0xFF);
+        outb(0x3D4, 0x0E);
+        outb(0x3D5, 0xFF);
+        return;
+    }
+
     const pos = @as(u16, terminal_row) * VGA_WIDTH + terminal_column;
 
     // Cursor low byte
@@ -285,7 +304,8 @@ fn process_command() void {
     terminal_putchar('\n');
 
     // Process built-in commands
-    if (std.mem.eql(u8, command_buffer[0..command_length], "help")) {
+    const trimmed = trim_spaces(command_buffer[0..command_length]);
+    if (std.mem.eql(u8, trimmed, "help")) {
         set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
         terminal_write("ZironOS Built-in Commands:\n");
         set_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
@@ -296,14 +316,14 @@ fn process_command() void {
         terminal_write("  colors   - Test color palette\n");
         terminal_write("  echo     - Echo arguments\n");
         terminal_write("  halt     - Shutdown system\n");
-        terminal_write("  exit     - Exit/halt system\n"); // <-- Added line
-    } else if (std.mem.eql(u8, command_buffer[0..command_length], "clear")) {
+        terminal_write("  exit     - Exit/halt system\n");
+    } else if (std.mem.eql(u8, trimmed, "clear")) {
         clear_screen();
-    } else if (std.mem.eql(u8, command_buffer[0..command_length], "version")) {
+    } else if (std.mem.eql(u8, trimmed, "version")) {
         set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
         terminal_write("ZironOS v0.2.0 Advanced Edition\n");
         terminal_write("32-bit x86 Kernel with Enhanced Features\n");
-    } else if (std.mem.eql(u8, command_buffer[0..command_length], "colors")) {
+    } else if (std.mem.eql(u8, trimmed, "colors")) {
         var color: u8 = 0;
         while (color < 16) : (color += 1) {
             set_color(color, VGA_COLOR_BLACK);
@@ -341,64 +361,119 @@ fn process_command() void {
     terminal_write("ZironOS> ");
     set_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
 }
+fn trim_spaces(input: []const u8) []const u8 {
+    var start: usize = 0;
+    var end: usize = input.len;
+
+    while (start < end and input[start] == ' ') : (start += 1) {}
+    while (end > start and input[end - 1] == ' ') : (end -= 1) {}
+
+    return input[start..end];
+}
 
 export fn main() noreturn {
     terminal_initialize();
     initIDT();
 
-    // Boot sequence with enhanced visuals
     set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
     terminal_write("==================================\n");
     terminal_write("    ZironOS v0.2.0\n");
     terminal_write("==================================\n\n");
 
-    // set_color(VGA_COLOR_YELLOW, VGA_COLOR_BLACK);
-    // terminal_write("Features: Scrolling, Backspace, Tab, Colors, Commands\n");
-    // terminal_write("Special Keys: Shift, Caps, Ctrl+C, Arrow Keys\n\n");
-
     set_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     terminal_write("Type 'help' for available commands.\n");
 
-    // Show initial prompt
     set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
     terminal_write("ZironOS> ");
     set_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
 
-    // Main keyboard loop with enhanced handling
     while (true) {
         const status = inb(0x64);
         if ((status & 1) != 0) {
-            const scancode = inb(0x60);
+            const raw = inb(0x60);
 
-            // Handle key releases (scancode & 0x80)
-            if ((scancode & 0x80) != 0) {
-                const release_code = scancode & 0x7F;
-                switch (release_code) {
-                    0x2A, 0x36 => shift_pressed = false, // Left/Right Shift
-                    0x1D => ctrl_pressed = false, // Ctrl
-                    0x38 => alt_pressed = false, // Alt
+            // Handle multi-byte scancodes (extended keys)
+            if (raw == 0xE0) {
+                awaiting_extended = true;
+                continue;
+            }
+
+            if ((raw & 0x80) != 0) {
+                // Key release
+                const release = raw & 0x7F;
+                switch (release) {
+                    0x2A, 0x36 => shift_pressed = false,
+                    0x1D => ctrl_pressed = false,
+                    0x38 => alt_pressed = false,
+                    else => {},
+                }
+                awaiting_extended = false; // Reset on release
+                continue;
+            }
+
+            if (awaiting_extended) {
+                awaiting_extended = false;
+                switch (raw) {
+                    0x48 => { // ↑ Up
+                        if (history_index > 0) {
+                            history_index -= 1;
+                            command_length = 0;
+                            // Clear the line (prompt + command)
+                            clear_line();
+                            set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+                            terminal_write("ZironOS> ");
+                            set_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+                            // Copy and redraw command from history
+                            while (command_history[history_index][command_length] != 0 and command_length < 255) : (command_length += 1) {
+                                command_buffer[command_length] = command_history[history_index][command_length];
+                            }
+                            command_buffer[command_length] = 0;
+                            terminal_write(command_buffer[0..command_length]);
+                        }
+                    },
+                    0x50 => { // ↓ Down
+                        if (history_index + 1 < history_count) {
+                            history_index += 1;
+                            command_length = 0;
+                            clear_line();
+                            set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+                            terminal_write("ZironOS> ");
+                            set_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+                            while (command_history[history_index][command_length] != 0 and command_length < 255) : (command_length += 1) {
+                                command_buffer[command_length] = command_history[history_index][command_length];
+                            }
+                            command_buffer[command_length] = 0;
+                            terminal_write(command_buffer[0..command_length]);
+                        } else {
+                            clear_line();
+                            set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+                            terminal_write("ZironOS> ");
+                            set_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+                            command_length = 0;
+                            command_buffer[0] = 0;
+                        }
+                    },
+                    0x4B => terminal_write("[←]"),
+                    0x4D => terminal_write("[→]"),
                     else => {},
                 }
                 continue;
             }
 
-            // Handle key presses
-            switch (scancode) {
-                0x01 => { // ESC
+            switch (raw) {
+                0x01 => {
                     set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
                     terminal_write("\n\nESC pressed - System halting...\n");
                     while (true) asm volatile ("hlt");
                 },
-                0x2A, 0x36 => shift_pressed = true, // Left/Right Shift
-                0x1D => ctrl_pressed = true, // Ctrl
-                0x38 => alt_pressed = true, // Alt
-                0x3A => caps_lock = !caps_lock, // Caps Lock
-                0x45 => num_lock = !num_lock, // Num Lock
-                0x46 => scroll_lock = !scroll_lock, // Scroll Lock
-
-                // Ctrl combinations
+                0x2A, 0x36 => shift_pressed = true,
+                0x1D => ctrl_pressed = true,
+                0x38 => alt_pressed = true,
+                0x3A => caps_lock = !caps_lock,
+                0x45 => num_lock = !num_lock,
+                0x46 => scroll_lock = !scroll_lock,
                 else => {
-                    if (ctrl_pressed and scancode == 0x2E) { // Ctrl+C
+                    if (ctrl_pressed and raw == 0x2E) {
                         set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
                         terminal_write("^C\n");
                         command_length = 0;
@@ -406,13 +481,15 @@ export fn main() noreturn {
                         continue;
                     }
 
-                    const ascii_char = scancode_to_ascii(scancode);
+                    const ascii_char = scancode_to_ascii(raw);
                     if (ascii_char != 0) {
                         if (ascii_char == '\n') {
                             process_command();
-                        } else if (ascii_char == 8) { // Backspace
+                        } else if (ascii_char == 8) {
                             if (command_length > 0) {
                                 command_length -= 1;
+                                terminal_putchar(8);
+                                terminal_putchar(' ');
                                 terminal_putchar(8);
                             }
                         } else if (command_length < 255) {
@@ -425,11 +502,11 @@ export fn main() noreturn {
             }
         }
 
-        // Cursor blink animation
         cursor_blink_counter += 1;
         if (cursor_blink_counter > 100000) {
             cursor_blink_counter = 0;
-            // Could implement cursor blinking here if needed
+            cursor_visible = !cursor_visible;
+            update_cursor();
         }
 
         asm volatile ("pause");
