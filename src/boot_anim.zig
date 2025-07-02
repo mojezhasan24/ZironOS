@@ -78,5 +78,5 @@ pub fn play_boot_animation() void {
     const byline_col = (80 - byline.len) / 2;
     draw_string(byline_row, byline_col, byline, VGA_COLOR.DARK_GRAY, VGA_COLOR.BLACK);
 
-    delay(1_000_000_00); // Short splash
+    delay(100_000_000); // Adjusted delay for smoother animation
 }
