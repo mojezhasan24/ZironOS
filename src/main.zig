@@ -1,6 +1,7 @@
 const std = @import("std");
 const idt = @import("idt.zig");
 const io = @import("io.zig");
+const boot_anim = @import("boot_anim.zig");
 var extended_scancode: bool = false;
 var awaiting_extended: bool = false;
 
@@ -372,6 +373,7 @@ fn trim_spaces(input: []const u8) []const u8 {
 }
 
 export fn main() noreturn {
+    boot_anim.play_boot_animation();
     terminal_initialize();
     initIDT();
 
