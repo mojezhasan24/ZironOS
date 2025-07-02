@@ -54,58 +54,29 @@ fn draw_string(row: usize, col: usize, str: []const u8, fg: u8, bg: u8) void {
 }
 
 pub fn play_boot_animation() void {
-    const lines = [_][]const u8{
-        "        ______  _              ____   _____ ",
-        "       |___  / | |            / __ \\ / ____|",
-        "          / /__| |_   ___    | |  | | (___  ",
-        "         / /_  | | | | \\ \\ /\\ / /| |\\___ \\ ",
-        "        / /__| | |_| | |\\ V  V / |_| |____) |",
-        "       /_____|_|\\__,_|_| \\_/\\_/\\___/|_____/ ",
+    const logo = [_][]const u8{
+        "\x04\x0F\x04\x0F\x04  Z I R O N O S  \x0F\x04\x0F\x04\x0F",
     };
+    const version = "ZironOS v0.2.0";
+    const byline = "github.com/mojez-hasan/zironos";
 
-    // Clear screen with black background
     clear_screen(VGA_COLOR.LIGHT_GRAY, VGA_COLOR.BLACK);
 
-    // Animation parameters
-    const start_row = 5;
-    const delay_between_lines = 50_000_000;
-    const delay_between_chars = 1_000_000;
-    const color_cycle = [_]u8{
-        VGA_COLOR.LIGHT_BLUE,
-        VGA_COLOR.LIGHT_CYAN,
-        VGA_COLOR.LIGHT_GREEN,
-        VGA_COLOR.LIGHT_MAGENTA,
-        VGA_COLOR.YELLOW,
-        VGA_COLOR.LIGHT_RED,
-    };
-
-    // Draw each line with animation
-    for (lines, 0..) |line, line_idx| {
-        const row = start_row + line_idx;
-        const color = color_cycle[line_idx % color_cycle.len];
-
-        // Character-by-character animation
-        for (0..line.len) |col| {
-            draw_string(row, col, line[col .. col + 1], color, VGA_COLOR.BLACK);
-            delay(delay_between_chars);
-        }
-
-        delay(delay_between_lines);
+    const logo_row = (25 - logo.len) / 2;
+    for (logo, 0..) |line, i| {
+        const col = (80 - line.len) / 2;
+        draw_string(logo_row + i, col, line, VGA_COLOR.LIGHT_CYAN, VGA_COLOR.BLACK);
     }
 
-    // Final flourish - flash the logo
-    for (0..3) |_| {
-        for (lines, 0..) |line, line_idx| {
-            const row = start_row + line_idx;
-            draw_string(row, 0, line, VGA_COLOR.WHITE, VGA_COLOR.BLACK);
-        }
-        delay(delay_between_lines * 2);
+    // Version (centered, below logo)
+    const version_row = logo_row + logo.len + 1;
+    const version_col = (80 - version.len) / 2;
+    draw_string(version_row, version_col, version, VGA_COLOR.LIGHT_GRAY, VGA_COLOR.BLACK);
 
-        for (lines, 0..) |line, line_idx| {
-            const row = start_row + line_idx;
-            const color = color_cycle[line_idx % color_cycle.len];
-            draw_string(row, 0, line, color, VGA_COLOR.BLACK);
-        }
-        delay(delay_between_lines * 2);
-    }
+    // Byline (centered, below version)
+    const byline_row = version_row + 1;
+    const byline_col = (80 - byline.len) / 2;
+    draw_string(byline_row, byline_col, byline, VGA_COLOR.DARK_GRAY, VGA_COLOR.BLACK);
+
+    delay(1_000_000_00); // Short splash
 }

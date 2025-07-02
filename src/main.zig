@@ -151,6 +151,8 @@ fn terminal_putentryat(c: u8, color: u8, x: u8, y: u8) void {
 }
 
 fn terminal_putchar(c: u8) void {
+    const vga_c = unicode_to_vga(c);
+
     switch (c) {
         '\n' => {
             terminal_column = 0;
@@ -183,7 +185,7 @@ fn terminal_putchar(c: u8) void {
             }
         },
         else => {
-            terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
+            terminal_putentryat(vga_c, terminal_color, terminal_column, terminal_row);
             terminal_column += 1;
             if (terminal_column >= VGA_WIDTH) {
                 terminal_column = 0;
@@ -370,6 +372,59 @@ fn trim_spaces(input: []const u8) []const u8 {
     while (end > start and input[end - 1] == ' ') : (end -= 1) {}
 
     return input[start..end];
+}
+
+fn unicode_to_vga(c: u8) u8 {
+    // Map common Unicode box/block/special chars to VGA/CP437
+    return switch (c) {
+        // Block elements
+        0xDB => 219, // █ (full block)
+        0xB0 => 176, // ░
+        0xB1 => 177, // ▒
+        0xB2 => 178, // ▓
+
+        // Box drawing (examples, add more as needed)
+        0xC4 => 196, // ─
+        0xB3 => 179, // │
+        0xDA => 218, // ┌
+        0xBF => 191, // ┐
+        0xC0 => 192, // └
+        0xD9 => 217, // ┘
+        0xC3 => 195, // ├
+        0xB4 => 180, // ┤
+        0xC2 => 194, // ┬
+        0xC1 => 193, // ┴
+        0xC5 => 197, // ┼
+
+        // Double lines (approximate)
+        0xCD => 205, // ═
+        0xBA => 186, // ║
+        0xC9 => 201, // ╔
+        0xBB => 187, // ╗
+        0xC8 => 200, // ╚
+        0xBC => 188, // ╝
+        0xCC => 204, // ╠
+        0xB9 => 185, // ╣
+        0xCB => 203, // ╦
+        0xCA => 202, // ╩
+        0xCE => 206, // ╬
+
+        // Special symbols (approximate)
+        0xF9 => 249, // ◆
+        0xF7 => 247, // ◇
+        0xFE => 254, // ▓ (solid block)
+        0xB7 => 183, // ·
+
+        // Fallback: ASCII or CP437
+        else => c,
+    };
+}
+
+fn draw_string(row: usize, col: usize, str: []const u8, fg: u8, bg: u8) void {
+    const color = vga_entry_color(fg, bg);
+    for (str, 0..) |char, i| {
+        VGA_MEMORY[row * 80 + col + i] = vga_entry(unicode_to_vga(char), color);
+    }
 }
 
 export fn main() noreturn {
