@@ -58,7 +58,7 @@ pub fn play_boot_animation() void {
         "\x04\x0F\x04\x0F\x04  Z I R O N O S  \x0F\x04\x0F\x04\x0F",
     };
     const version = "ZironOS v0.2.0";
-    const byline = "github.com/mojez-hasan/zironos";
+    const byline = "One of its kind, Zig based Operating System";
 
     clear_screen(VGA_COLOR.LIGHT_GRAY, VGA_COLOR.BLACK);
 
@@ -78,5 +78,5 @@ pub fn play_boot_animation() void {
     const byline_col = (80 - byline.len) / 2;
     draw_string(byline_row, byline_col, byline, VGA_COLOR.DARK_GRAY, VGA_COLOR.BLACK);
 
-    delay(100_000_000); // Adjusted delay for smoother animation
+    delay(10_000_000); // Adjusted delay for smoother animation
 }

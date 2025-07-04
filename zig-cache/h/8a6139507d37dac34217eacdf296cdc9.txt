@@ -1,2 +1,0 @@
-0
-1118 21120458 1750779945081097395 7a7ffa5af719c39c7ddd4bb9eaebd6be 0 /home/mojez-hasan/ZironOS/src/boot.s
