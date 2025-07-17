@@ -60,14 +60,12 @@ make run      # Launch QEMU and boot ZironOS
 ✅ Initializes a VGA buffer (80x25, 16 colors)
 ✅ Prints text in color using low-level memory writes
 ✅ Captures keyboard input and prints each character in real time
+
 ✨ Output on Boot
-
-ZironOS v0.1.0
-Kernel loaded successfully!
-Welcome to ZironOS - A kernel written in Zig
-System initialized and ready.
-
-ZironShell >
+====================
+   ZironOS v0.2.0
+====================
+ZironOS>
 
 Then you can start typing — and it responds instantly!
 🧪 Testing on QEMU
