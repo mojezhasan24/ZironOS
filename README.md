@@ -1,6 +1,6 @@
 🔷 ZironOS — A Tiny 32-bit Kernel in Zig
 
-ZironOS, is a minimalistic multiboot-compliant kernel written in Zig and x86 assembly. It boots with a boot animation using GRUB, prints to the screen using VGA text mode, and captures real-time keyboard input using raw scancodes.
+ZironOS is a minimalistic multiboot-compliant kernel written in Zig and x86 assembly. It boots with a boot animation using GRUB, prints to the screen using VGA text mode, and captures real-time keyboard input using raw scancodes.
 
 https://github.com/user-attachments/assets/b72d2211-24b0-430e-97fb-9e2410b250c9
 
