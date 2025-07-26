@@ -37,3 +37,4 @@ pub fn loadIDT() void {
         : "memory"
     );
 }
+
