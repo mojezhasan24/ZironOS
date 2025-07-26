@@ -18,6 +18,7 @@ pub const IDTEntry = packed struct {
 };
 
 pub var idt: [256]IDTEntry = undefined;
+idt[44] = IDTEntry.init(@intFromPtr(@ptrCast(&irq12_handler)), CODE_SELECTOR, 0x8E);
 
 pub fn loadIDT() void {
     const IDTPointer = packed struct {
