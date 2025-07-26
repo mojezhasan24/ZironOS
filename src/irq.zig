@@ -39,3 +39,9 @@ export fn irq0_handler() void {
     }
     io.outb(0x20, 0x20);
 }
+export fn irq12_callback() void {
+    const packet_byte = io.inb(0x60);
+    _ = packet_byte;
+    // For now just print or store the byte
+    // Later we’ll process 3-byte PS/2 packets
+}
