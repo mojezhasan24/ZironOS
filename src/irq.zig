@@ -40,14 +40,4 @@ export fn irq0_handler() void {
     io.outb(0x20, 0x20);
 }
 
-pub export fn irq12_callback() void {
-    const data = @import("mouse.zig").mouse_read();
-    @import("mouse.zig").handle_mouse_data(data);
-    // Send EOI to PIC
-    io.outb(0xA0, 0x20);
-    io.outb(0x20, 0x20);
-}
-// pub export fn irq12_handler() void {
-//     // Call the IRQ12 callback
-//     irq12_callback();
-// }
+
