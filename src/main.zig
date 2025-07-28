@@ -4,7 +4,7 @@ const io = @import("io.zig");
 const boot_anim = @import("boot_anim.zig");
 var extended_scancode: bool = false;
 var awaiting_extended: bool = false;
-
+const mouse = @import("mouse.zig");
 // VGA text mode constants
 const VGA_WIDTH = 80;
 const VGA_HEIGHT = 25;
@@ -431,7 +431,7 @@ export fn main() noreturn {
     boot_anim.play_boot_animation();
     terminal_initialize();
     initIDT();
-
+    mouse.mouse_install();
     set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
     terminal_write("==================================\n");
     terminal_write("    ZironOS v0.2.0\n");

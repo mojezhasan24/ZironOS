@@ -39,9 +39,12 @@ export fn irq0_handler() void {
     }
     io.outb(0x20, 0x20);
 }
-export fn irq12_callback() void {
-    const packet_byte = io.inb(0x60);
-    _ = packet_byte;
-    // For now just print or store the byte
-    // Later we’ll process 3-byte PS/2 packets
+
+pub export fn irq12_callback() void {
+    const data = @import("mouse.zig").mouse_read();
+    @import("mouse.zig").handle_mouse_data(data);
+
+    // Send EOI to PIC
+    @import("io.zig").outb(0xA0, 0x20); // Secondary PIC
+    @import("io.zig").outb(0x20, 0x20); // Primary PIC
 }
