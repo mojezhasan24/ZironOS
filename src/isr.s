@@ -9,6 +9,6 @@ isr0:
 .type irq12_handler, @function
 irq12_handler:
     pusha
-    call irq12_callback
+   /* call irq12_callback */
     popa
     iretl
