@@ -431,7 +431,14 @@ export fn main() noreturn {
     boot_anim.play_boot_animation();
     terminal_initialize();
     initIDT();
-    mouse.mouse_install();
+    mouse.mouse_init();
+    // In your initialization code:
+    if (!@import("mouse.zig").mouse_init()) {
+        @import("terminal.zig").print("Mouse initialization failed\n", .{});
+    // Handle error or continue without mouse
+    } else {
+        @import("terminal.zig").print("Mouse initialized successfully\n", .{});
+    }
     set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
     terminal_write("==================================\n");
     terminal_write("    ZironOS v0.2.0\n");

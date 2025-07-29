@@ -8,19 +8,22 @@ isr0:
 .global irq12_handler
 .type irq12_handler, @function
 irq12_handler:
-    pusha                   
-    cld                    
+    pusha
+    cld
 
-    ; Read mouse data
-    inb $0x60, %al         
-    mov %al, %bl           
+    /* Read mouse data */
+    in $0x60, %al
+    movzx %al, %ebx  /* Zero-extend to 32-bit */
 
-    ; Call Zig function to handle mouse data
-    push %ebx              
-    call handle_mouse_data 
-    add $4, %esp           
-    movb $0x20, %al
-    outb %al, $0xA0        
-    outb %al, $0x20        
-    popa                   
-    iretl                  
+    /* Call Zig function */
+    push %ebx
+    call handle_mouse_data
+    add $4, %esp
+
+    /* Send EOI */
+    mov $0x20, %al
+    out %al, $0xA0
+    out %al, $0x20
+
+    popa
+    iretl
