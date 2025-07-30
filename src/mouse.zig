@@ -51,3 +51,6 @@ fn update_mouse_state() void {
 pub fn get_mouse_state() MouseState {
     return mouse_state;
 }
+pub fn mouse_init() bool {
+    return true; // stub for now
+}
