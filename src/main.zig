@@ -431,7 +431,7 @@ export fn main() noreturn {
     boot_anim.play_boot_animation();
     terminal_initialize();
     initIDT();
-    mouse.mouse_init();
+    // mouse.mouse_init();
     set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
     terminal_write("==================================\n");
     terminal_write("    ZironOS v0.2.0\n");
