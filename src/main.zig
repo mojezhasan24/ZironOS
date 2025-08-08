@@ -9,6 +9,8 @@ const mouse = @import("mouse.zig");
 const VGA_WIDTH = 80;
 const VGA_HEIGHT = 25;
 const VGA_MEMORY = @as(*volatile [VGA_HEIGHT * VGA_WIDTH]u16, @ptrFromInt(0xB8000));
+const fs = @import("fs.zig");
+const irq = @import("irq.zig");
 
 // VGA colors
 const VGA_COLOR_BLACK = 0;
@@ -316,7 +318,7 @@ fn process_command() void {
         terminal_write("  clear    - Clear screen\n");
         terminal_write("  version  - Show OS version\n");
         terminal_write("  time     - Show system uptime\n");
-        terminal_write("  colors   - Test color palette\n");
+        // terminal_write("  colors   - Test color palette\n");
         terminal_write("  echo     - Echo arguments\n");
         terminal_write("  halt     - Shutdown system\n");
         terminal_write("  exit     - Exit/halt system\n");
@@ -347,10 +349,28 @@ fn process_command() void {
         set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
         terminal_write("Exiting ZironOS...\n");
         while (true) asm volatile ("hlt");
-    } else if (command_length > 0) {
+    } else if (std.mem.eql(u8, trimmed, "time")) {
+        set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
+        terminal_write("System Uptime: ");
+        terminal_writenum(irq.get_uptime_seconds());
+        terminal_write(" seconds\n");
+    } else if (std.mem.eql(u8, trimmed, "ls")) {
+        fs.list_files();
+    } else if (std.mem.startsWith(u8, trimmed, "cat ")) {
+        const filename = trimmed[4..];
+        const file_data = fs.read_file(filename);
+        if (file_data) |data| {
+            terminal_write(data);
+        } else {
+            set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+            terminal_write("File not found: ");
+            terminal_write(filename);
+            terminal_write("\n");
+        }
+    } else {
         set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
         terminal_write("Unknown command: ");
-        terminal_write(command_buffer[0..command_length]);
+        terminal_write(trimmed);
         terminal_write("\nType 'help' for available commands.\n");
     }
 
