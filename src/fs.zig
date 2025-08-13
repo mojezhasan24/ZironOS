@@ -11,7 +11,7 @@ pub const files = [_]File{
     .{ .name = "readme.txt", .data = "Welcome to Ziron OS!\n" },
     
 };
-
+// comment 
 pub fn list_files() void {
     for (files) |file| {
         vga.terminal_write(file.name);
