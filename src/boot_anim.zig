@@ -57,7 +57,7 @@ pub fn play_boot_animation() void {
     const logo = [_][]const u8{
         "\x04\x0F\x04\x0F\x04  Z I R O N O S  \x0F\x04\x0F\x04\x0F",
     };
-    const version = "ZironOS v0.2.0";
+    const version = "ZironOS v0.2.1";
     const byline = "One of its kind, Zig based Operating System";
 
     clear_screen(VGA_COLOR.LIGHT_GRAY, VGA_COLOR.BLACK);
